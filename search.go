@@ -55,8 +55,8 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 		{l2, w2},
 	}
 
-	maxUsed := 0
-	bestRemaining := vehicles
+	bestPackedCount := 0
+	vehiclesLeftAfterBestFit := vehicles
 
 	for _, o := range orientations {
 		rows := o.width / 10
@@ -67,17 +67,17 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 		}
 
 		tmpRemaining := []int{}
-		count := 0
+		currentOrientationPackedCount := 0
 
-		for _, v := range vehicles {
-			lBlocks := v / 10
+		for _, vehicle := range vehicles {
+			lBlocks := vehicle / 10
 			fit := false
 
 			for row := 0; row < rows; row++ {
 				for col := 0; col <= cols-lBlocks; col++ {
 					canFit := true
-					for k := 0; k < lBlocks; k++ {
-						if space[row][col+k] {
+					for offset := 0; offset < lBlocks; offset++ {
+						if space[row][col+offset] {
 							canFit = false
 							break
 						}
@@ -96,19 +96,19 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 			}
 
 			if fit {
-				count++ 
+				currentOrientationPackedCount++ 
 			} else {
-				tmpRemaining = append(tmpRemaining, v) 
+				tmpRemaining = append(tmpRemaining, vehicle) 
 			}
 		}
 
-		if count > maxUsed {
-			maxUsed = count
-			bestRemaining = tmpRemaining
+		if currentOrientationPackedCount > bestPackedCount {
+			bestPackedCount = currentOrientationPackedCount
+			vehiclesLeftAfterBestFit = tmpRemaining
 		}
 	}
 
-	return bestRemaining, maxUsed
+	return vehiclesLeftAfterBestFit, bestPackedCount
 }
 
 func findValidCombinations(vehicles []int, listings []Listing) []Result {
