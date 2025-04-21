@@ -6,6 +6,9 @@ import (
 	"sort"
 )
 
+
+const BLOCK_SIZE = 10
+
 func loadListings(path string) ([]Listing, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -35,7 +38,7 @@ func flattenVehicles(request []VehicleRequest) []int {
 	return vehicles
 }
 
-func mapLocations(listings []Listing) map[string][]Listing {
+func groupByLocations(listings []Listing) map[string][]Listing {
 	byLocation := map[string][]Listing{}
 	for _, l := range listings {
 		byLocation[l.LocationID] = append(byLocation[l.LocationID], l)
@@ -59,8 +62,8 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 	vehiclesLeftAfterBestFit := vehicles
 
 	for _, o := range orientations {
-		rows := o.width / 10
-		cols := o.length / 10
+		rows := o.width / BLOCK_SIZE
+		cols := o.length / BLOCK_SIZE
 		space := make([][]bool, rows)
 		for i := range space {
 			space[i] = make([]bool, cols)
@@ -70,7 +73,7 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 		currentOrientationPackedCount := 0
 
 		for _, vehicle := range vehicles {
-			lBlocks := vehicle / 10
+			lBlocks := vehicle / BLOCK_SIZE
 			fit := false
 
 			for row := 0; row < rows; row++ {
@@ -112,7 +115,7 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 }
 
 func findValidCombinations(vehicles []int, listings []Listing) []Result {
-	locations := mapLocations(listings)
+	locations := groupByLocations(listings)
 	results := []Result{}
 
 	for locationID, locationListings := range locations {
@@ -120,7 +123,7 @@ func findValidCombinations(vehicles []int, listings []Listing) []Result {
 			return locationListings[i].PriceInCents < locationListings[j].PriceInCents
 		})
 
-		remaining := append([]int(nil), vehicles...) 
+		remaining := append([]int(nil), vehicles...)
 		totalPrice := 0
 		listingIDs := []string{}
 
@@ -139,9 +142,9 @@ func findValidCombinations(vehicles []int, listings []Listing) []Result {
 
 		if len(remaining) == 0 {
 			results = append(results, Result{
-				LocationID:         locationID,
-				ListingIDs:         listingIDs,
-				TotalPriceInCents:  totalPrice,
+				LocationID:        locationID,
+				ListingIDs:        listingIDs,
+				TotalPriceInCents: totalPrice,
 			})
 		}
 	}
