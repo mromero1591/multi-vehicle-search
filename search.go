@@ -46,72 +46,77 @@ func groupByLocations(listings []Listing) map[string][]Listing {
 	return byLocation
 }
 
+func canPlace(row []bool, blocks int) int {
+    maxStart := len(row) - blocks
+    for start := 0; start <= maxStart; start++ {
+        ok := true
+        for offset := 0; offset < blocks; offset++ {
+            if row[start+offset] {
+                ok = false
+                break
+            }
+        }
+        if ok {
+            return start
+        }
+    }
+    return -1
+}
+
+func place(row []bool, start, blocks int) {
+    for k := 0; k < blocks; k++ {
+        row[start+k] = true
+    }
+}
+
+func packOrientation(length, width int, vehicles []int) ([]int, int) {
+    rows, cols := width/BLOCK_SIZE, length/BLOCK_SIZE
+    space := make([][]bool, rows)
+    for i := range space {
+        space[i] = make([]bool, cols)
+    }
+
+    var remaining []int
+    packed := 0
+
+    for _, vehicle := range vehicles {
+        blocks := vehicle / BLOCK_SIZE
+        placed := false
+
+        // scan each row looking for a fit
+        for r := 0; r < rows && !placed; r++ {
+            if start := canPlace(space[r], blocks); start >= 0 {
+                place(space[r], start, blocks)
+                packed++
+                placed = true
+            }
+        }
+
+        if !placed {
+            remaining = append(remaining, vehicle)
+        }
+    }
+
+    return remaining, packed
+}
+
 func packVehicles(listing Listing, vehicles []int) ([]int, int) {
-	l1, w1 := listing.Length, listing.Width
-	l2, w2 := listing.Width, listing.Length
+    orientations := [][2]int{
+        {listing.Length, listing.Width},
+        {listing.Width, listing.Length},
+    }
 
-	orientations := []struct {
-		length int
-		width  int
-	}{
-		{l1, w1},
-		{l2, w2},
-	}
+    bestRemaning := vehicles
+    bestCount := 0
 
-	bestPackedCount := 0
-	vehiclesLeftAfterBestFit := vehicles
-
-	for _, o := range orientations {
-		rows := o.width / BLOCK_SIZE
-		cols := o.length / BLOCK_SIZE
-		space := make([][]bool, rows)
-		for i := range space {
-			space[i] = make([]bool, cols)
-		}
-
-		tmpRemaining := []int{}
-		packedCount := 0
-
-		for _, vehicle := range vehicles {
-			lBlocks := vehicle / BLOCK_SIZE
-			fit := false
-
-			for row := 0; row < rows; row++ {
-				for col := 0; col <= cols-lBlocks; col++ {
-					canFit := true
-					for offset := 0; offset < lBlocks; offset++ {
-						if space[row][col+offset] {
-							canFit = false
-							break
-						}
-					}
-					if canFit {
-						for k := 0; k < lBlocks; k++ {
-							space[row][col+k] = true
-						}
-						fit = true
-						break
-					}
-				}
-				if fit {
-					break
-				}
-			}
-
-			if fit {
-				packedCount++ 
-			} else {
-				tmpRemaining = append(tmpRemaining, vehicle) 
-			}
-		}
-
-		if packedCount > bestPackedCount {
-			bestPackedCount = packedCount
-			vehiclesLeftAfterBestFit = tmpRemaining
-		}
-	}
-
-	return vehiclesLeftAfterBestFit, bestPackedCount
+    for _, o := range orientations {
+        rem, cnt := packOrientation(o[0], o[1], vehicles)
+        if cnt > bestCount {
+            bestCount = cnt
+            bestRemaning = rem
+        }
+    }
+    return bestRemaning, bestCount
 }
 
 func findValidCombinations(vehicles []int, listings []Listing) []Result {
