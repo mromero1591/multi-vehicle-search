@@ -6,11 +6,12 @@ type VehicleRequest struct {
 }
 
 type Listing struct {
-	ID           string `json:"id"`
-	LocationID   string `json:"location_id"`
-	Length       int    `json:"length"`
-	Width        int    `json:"width"`
-	PriceInCents int    `json:"price_in_cents"`
+	ID             string `json:"id"`
+	LocationID     string `json:"location_id"`
+	Length         int    `json:"length"`
+	Width          int    `json:"width"`
+	PriceInCents   int    `json:"price_in_cents"`
+	AvailableSpace int    `json:"available_space"`
 }
 
 type Result struct {

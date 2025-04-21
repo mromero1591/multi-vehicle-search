@@ -16,6 +16,7 @@ func loadListings(path string) ([]Listing, error) {
 	if err := json.Unmarshal(data, &listings); err != nil {
 		return nil, err
 	}
+
 	return listings, nil
 }
 
@@ -30,7 +31,7 @@ func flattenVehicles(request []VehicleRequest) []int {
 	sort.Slice(vehicles, func(i, j int) bool {
 		return vehicles[i] > vehicles[j]
 	})
-	
+
 	return vehicles
 }
 
@@ -42,48 +43,108 @@ func mapLocations(listings []Listing) map[string][]Listing {
 	return byLocation
 }
 
-func fits(listing Listing, length int) bool {
-	return (length <= listing.Length && 10 <= listing.Width) ||
-		(10 <= listing.Length && length <= listing.Width)
+func packVehicles(listing Listing, vehicles []int) ([]int, int) {
+	l1, w1 := listing.Length, listing.Width
+	l2, w2 := listing.Width, listing.Length
+
+	// Two orientations: (length, width) or (width, length)
+	orientations := []struct {
+		length int
+		width  int
+	}{
+		{l1, w1},
+		{l2, w2},
+	}
+
+	maxUsed := 0
+	bestRemaining := vehicles
+
+	for _, o := range orientations {
+		// Create a 2D grid to simulate space (each block is 10ft)
+		rows := o.width / 10
+		cols := o.length / 10
+		space := make([][]bool, rows)
+		for i := range space {
+			space[i] = make([]bool, cols)
+		}
+
+		tmpRemaining := []int{}
+		count := 0
+
+		// Try to pack vehicles
+		for _, v := range vehicles {
+			lBlocks := v / 10
+			fit := false
+
+			for row := 0; row < rows; row++ {
+				for col := 0; col <= cols-lBlocks; col++ {
+					canFit := true
+					for k := 0; k < lBlocks; k++ {
+						if space[row][col+k] {
+							canFit = false
+							break
+						}
+					}
+					if canFit {
+						for k := 0; k < lBlocks; k++ {
+							space[row][col+k] = true
+						}
+						fit = true
+						break
+					}
+				}
+				if fit {
+					break
+				}
+			}
+
+			if fit {
+				count++ // ✅ increment successfully packed count
+			} else {
+				tmpRemaining = append(tmpRemaining, v) // ✅ preserve unpacked vehicles
+			}
+		}
+
+		if count > maxUsed {
+			maxUsed = count
+			bestRemaining = tmpRemaining
+		}
+	}
+
+	return bestRemaining, maxUsed
 }
 
 func findValidCombinations(vehicles []int, listings []Listing) []Result {
-	locations := mapLocations(listings) 
-
+	locations := mapLocations(listings)
 	results := []Result{}
+
 	for locationID, locationListings := range locations {
 		sort.Slice(locationListings, func(i, j int) bool {
 			return locationListings[i].PriceInCents < locationListings[j].PriceInCents
 		})
 
-		used := make([]bool, len(locationListings))
-		listingIDs := []string{}
+		remaining := append([]int(nil), vehicles...) 
 		totalPrice := 0
+		listingIDs := []string{}
 
-		// Greedily assign vehicles to cheapest listings that can fit them
-		for _, vehicle := range vehicles {
-			assigned := false
-			for i, listing := range locationListings {
-				if !used[i] && fits(listing, vehicle) {
-					used[i] = true
-					listingIDs = append(listingIDs, listing.ID)
-					totalPrice += listing.PriceInCents
-					assigned = true
-					break
-				}
+		for _, listing := range locationListings {
+			if len(remaining) == 0 {
+				break // all vehicles packed
 			}
-			if !assigned {
-				listingIDs = nil
-				totalPrice = 0
-				break
+
+			updatedRemaining, packed := packVehicles(listing, remaining)
+			if packed > 0 {
+				listingIDs = append(listingIDs, listing.ID)
+				totalPrice += listing.PriceInCents
+				remaining = updatedRemaining
 			}
 		}
 
-		if len(listingIDs) == len(vehicles) {
+		if len(remaining) == 0 {
 			results = append(results, Result{
-				LocationID:        locationID,
-				ListingIDs:        listingIDs,
-				TotalPriceInCents: totalPrice,
+				LocationID:         locationID,
+				ListingIDs:         listingIDs,
+				TotalPriceInCents:  totalPrice,
 			})
 		}
 	}
@@ -91,5 +152,6 @@ func findValidCombinations(vehicles []int, listings []Listing) []Result {
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].TotalPriceInCents < results[j].TotalPriceInCents
 	})
+
 	return results
 }
