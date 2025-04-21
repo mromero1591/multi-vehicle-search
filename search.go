@@ -70,7 +70,7 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 		}
 
 		tmpRemaining := []int{}
-		currentOrientationPackedCount := 0
+		packedCount := 0
 
 		for _, vehicle := range vehicles {
 			lBlocks := vehicle / BLOCK_SIZE
@@ -99,14 +99,14 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 			}
 
 			if fit {
-				currentOrientationPackedCount++ 
+				packedCount++ 
 			} else {
 				tmpRemaining = append(tmpRemaining, vehicle) 
 			}
 		}
 
-		if currentOrientationPackedCount > bestPackedCount {
-			bestPackedCount = currentOrientationPackedCount
+		if packedCount > bestPackedCount {
+			bestPackedCount = packedCount
 			vehiclesLeftAfterBestFit = tmpRemaining
 		}
 	}
