@@ -11,7 +11,8 @@ func loadListings(path string) ([]Listing, error) {
 	if err != nil {
 		return nil, err
 	}
-	var listings []Listing
+
+	listings := []Listing{}
 	if err := json.Unmarshal(data, &listings); err != nil {
 		return nil, err
 	}
@@ -19,13 +20,26 @@ func loadListings(path string) ([]Listing, error) {
 }
 
 func flattenVehicles(request []VehicleRequest) []int {
-	var vehicles []int
+	vehicles := []int{}
 	for _, r := range request {
 		for i := 0; i < r.Quantity; i++ {
 			vehicles = append(vehicles, r.Length)
 		}
 	}
+
+	sort.Slice(vehicles, func(i, j int) bool {
+		return vehicles[i] > vehicles[j]
+	})
+	
 	return vehicles
+}
+
+func mapLocations(listings []Listing) map[string][]Listing {
+	byLocation := map[string][]Listing{}
+	for _, l := range listings {
+		byLocation[l.LocationID] = append(byLocation[l.LocationID], l)
+	}
+	return byLocation
 }
 
 func fits(listing Listing, length int) bool {
@@ -34,13 +48,10 @@ func fits(listing Listing, length int) bool {
 }
 
 func findValidCombinations(vehicles []int, listings []Listing) []Result {
-	byLocation := map[string][]Listing{}
-	for _, l := range listings {
-		byLocation[l.LocationID] = append(byLocation[l.LocationID], l)
-	}
+	locations := mapLocations(listings) 
 
-	var results []Result
-	for locationID, locationListings := range byLocation {
+	results := []Result{}
+	for locationID, locationListings := range locations {
 		sort.Slice(locationListings, func(i, j int) bool {
 			return locationListings[i].PriceInCents < locationListings[j].PriceInCents
 		})
