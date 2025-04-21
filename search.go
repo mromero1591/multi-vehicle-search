@@ -47,7 +47,6 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 	l1, w1 := listing.Length, listing.Width
 	l2, w2 := listing.Width, listing.Length
 
-	// Two orientations: (length, width) or (width, length)
 	orientations := []struct {
 		length int
 		width  int
@@ -60,7 +59,6 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 	bestRemaining := vehicles
 
 	for _, o := range orientations {
-		// Create a 2D grid to simulate space (each block is 10ft)
 		rows := o.width / 10
 		cols := o.length / 10
 		space := make([][]bool, rows)
@@ -71,7 +69,6 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 		tmpRemaining := []int{}
 		count := 0
 
-		// Try to pack vehicles
 		for _, v := range vehicles {
 			lBlocks := v / 10
 			fit := false
@@ -99,9 +96,9 @@ func packVehicles(listing Listing, vehicles []int) ([]int, int) {
 			}
 
 			if fit {
-				count++ // ✅ increment successfully packed count
+				count++ 
 			} else {
-				tmpRemaining = append(tmpRemaining, v) // ✅ preserve unpacked vehicles
+				tmpRemaining = append(tmpRemaining, v) 
 			}
 		}
 

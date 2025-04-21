@@ -11,7 +11,6 @@ type Listing struct {
 	Length         int    `json:"length"`
 	Width          int    `json:"width"`
 	PriceInCents   int    `json:"price_in_cents"`
-	AvailableSpace int    `json:"available_space"`
 }
 
 type Result struct {
